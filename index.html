@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CODEX — 데이터 도감</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+KR:wght@300;400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#050810;--surface:#0b1020;--card-bg:#0d1528;--border:#1a2a4a;--accent:#00d4ff;--accent2:#7b2fff;--gold:#ffd700;--green:#00ff88;--red:#ff3355;--text:#c8d8f0;--muted:#4a6080;--glow:0 0 20px rgba(0,212,255,0.4);}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 20% 10%,rgba(0,212,255,.07) 0%,transparent 60%),radial-gradient(ellipse 60% 40% at 80% 90%,rgba(123,47,255,.08) 0%,transparent 60%);pointer-events:none;z-index:0;}
+::-webkit-scrollbar{width:4px;} ::-webkit-scrollbar-track{background:var(--bg);} ::-webkit-scrollbar-thumb{background:var(--border);}
+
+/* HEADER */
+header{position:relative;z-index:1;text-align:center;padding:50px 20px 32px;border-bottom:1px solid var(--border);}
+.header-tag{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:4px;margin-bottom:10px;opacity:.8;}
+header h1{font-family:'Orbitron',sans-serif;font-size:clamp(2.2rem,5vw,4rem);font-weight:900;letter-spacing:.15em;background:linear-gradient(135deg,var(--accent) 0%,#fff 50%,var(--accent2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 30px rgba(0,212,255,.5));}
+.header-sub{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--muted);margin-top:12px;letter-spacing:2px;}
+.header-line{width:200px;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);margin:20px auto 0;}
+
+/* RACE HUD */
+.race-hud{position:fixed;top:16px;right:16px;z-index:50;display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
+.funds-display{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--gold);background:rgba(5,8,16,.88);border:1px solid rgba(255,215,0,.25);padding:5px 12px;letter-spacing:1px;backdrop-filter:blur(6px);}
+.race-btn{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;padding:9px 18px;background:linear-gradient(135deg,rgba(255,215,0,.15),rgba(255,215,0,.05));border:1px solid var(--gold);color:var(--gold);cursor:pointer;clip-path:polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%);transition:all .25s;text-transform:uppercase;}
+.race-btn:hover{background:linear-gradient(135deg,rgba(255,215,0,.3),rgba(255,215,0,.12));box-shadow:0 0 20px rgba(255,215,0,.4);}
+
+/* FILTER */
+.filter-bar{position:relative;z-index:1;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;padding:22px 20px;}
+.filter-btn{font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:2px;padding:7px 18px;background:transparent;border:1px solid var(--border);color:var(--muted);cursor:pointer;transition:all .25s;text-transform:uppercase;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);}
+.filter-btn:hover,.filter-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.07);box-shadow:var(--glow);}
+
+/* GRID */
+.grid-section{position:relative;z-index:1;padding:20px 40px 80px;}
+.grid-count{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:2px;margin-bottom:20px;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:20px;}
+
+/* CARDS */
+.card{background:var(--card-bg);border:1px solid var(--border);cursor:pointer;position:relative;transition:transform .35s cubic-bezier(.23,1,.32,1),box-shadow .35s cubic-bezier(.23,1,.32,1),border-color .35s;overflow:hidden;animation:fadeInUp .5s both;}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+.card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,212,255,.05) 0%,transparent 60%);opacity:0;transition:opacity .3s;}
+.card:hover{transform:translateY(-10px) scale(1.03);box-shadow:0 20px 50px rgba(0,0,0,.7),0 0 30px rgba(0,212,255,.2),inset 0 0 20px rgba(0,212,255,.04);border-color:rgba(0,212,255,.5);}
+.card:hover::before{opacity:1;}
+.card-num{position:absolute;top:8px;left:10px;font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);z-index:1;}
+.card-rarity{position:absolute;top:8px;right:10px;width:8px;height:8px;border-radius:50%;z-index:1;}
+.rarity-common{background:#888;box-shadow:0 0 6px #888;} .rarity-rare{background:#4488ff;box-shadow:0 0 8px #4488ff;} .rarity-epic{background:#aa44ff;box-shadow:0 0 10px #aa44ff;} .rarity-legend{background:var(--gold);box-shadow:0 0 14px var(--gold);}
+.card-img-wrap{width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:#060d1c;font-size:72px;user-select:none;}
+.card-info{padding:12px 12px 14px;border-top:1px solid var(--border);}
+.card-type{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:4px;opacity:.7;}
+.card-name{font-size:14px;font-weight:700;color:#e8f0ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+
+/* DOGAM POPUPS */
+.overlay{position:fixed;inset:0;background:rgba(2,5,15,.85);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;pointer-events:none;transition:opacity .3s;}
+.overlay.active{opacity:1;pointer-events:all;}
+.popup1{background:var(--surface);border:1px solid rgba(0,212,255,.3);width:min(560px,92vw);max-height:88vh;overflow-y:auto;position:relative;box-shadow:0 0 60px rgba(0,0,0,.8),0 0 40px rgba(0,212,255,.1);animation:popIn .35s cubic-bezier(.23,1,.32,1) both;}
+@keyframes popIn{from{transform:scale(.88) translateY(20px);opacity:0;}to{transform:scale(1) translateY(0);opacity:1;}}
+.popup1-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);background:rgba(0,212,255,.04);}
+.popup1-tag{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--accent);letter-spacing:3px;}
+.btn-close{width:30px;height:30px;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--muted);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.btn-close:hover{border-color:#ff4466;color:#ff4466;background:rgba(255,68,102,.1);}
+.popup1-body{display:grid;grid-template-columns:200px 1fr;}
+@media(max-width:480px){.popup1-body{grid-template-columns:1fr;}}
+.popup1-img-wrap{display:flex;align-items:center;justify-content:center;background:#060d1c;font-size:100px;aspect-ratio:1;cursor:zoom-in;position:relative;overflow:hidden;border-right:1px solid var(--border);user-select:none;}
+.popup1-img-wrap::after{content:'🔍 클릭하여 확대';position:absolute;bottom:0;left:0;right:0;background:rgba(0,212,255,.85);color:#000;font-family:'Share Tech Mono',monospace;font-size:10px;text-align:center;padding:6px;transform:translateY(100%);transition:transform .25s;}
+.popup1-img-wrap:hover::after{transform:translateY(0);}
+.popup1-content{padding:24px;}
+.popup1-rarity-badge{display:inline-block;font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;padding:3px 10px;border:1px solid currentColor;margin-bottom:10px;text-transform:uppercase;}
+.badge-common{color:#999;} .badge-rare{color:#4488ff;} .badge-epic{color:#aa44ff;} .badge-legend{color:var(--gold);}
+.popup1-name{font-family:'Orbitron',sans-serif;font-size:1.4rem;font-weight:700;color:#fff;margin-bottom:6px;letter-spacing:.05em;}
+.popup1-type{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:2px;margin-bottom:16px;opacity:.7;}
+.popup1-desc{font-size:13.5px;line-height:1.9;color:var(--text);opacity:.85;margin-bottom:20px;}
+.popup1-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.stat-item{background:rgba(0,212,255,.04);border:1px solid var(--border);padding:8px 12px;}
+.stat-label{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:3px;}
+.stat-val{font-family:'Share Tech Mono',monospace;font-size:14px;color:var(--accent);font-weight:700;}
+.overlay2{position:fixed;inset:0;background:rgba(0,0,0,.95);display:flex;align-items:center;justify-content:center;z-index:200;opacity:0;pointer-events:none;transition:opacity .25s;cursor:zoom-out;}
+.overlay2.active{opacity:1;pointer-events:all;}
+.popup2-img{font-size:clamp(120px,30vw,260px);animation:zoomIn .3s cubic-bezier(.23,1,.32,1);user-select:none;filter:drop-shadow(0 0 60px rgba(0,212,255,.3));}
+@keyframes zoomIn{from{transform:scale(.7);opacity:0;}to{transform:scale(1);opacity:1;}}
+.popup2-close{position:fixed;top:24px;right:24px;width:40px;height:40px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.2);color:#fff;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.popup2-close:hover{background:rgba(255,68,102,.2);border-color:#ff4466;color:#ff4466;}
+.esc-hint{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);font-family:'Share Tech Mono',monospace;font-size:10px;color:rgba(255,255,255,.3);letter-spacing:2px;pointer-events:none;z-index:300;}
+
+/* RACE MODAL */
+#race-overlay{position:fixed;inset:0;background:rgba(2,5,15,.95);backdrop-filter:blur(12px);z-index:500;opacity:0;pointer-events:none;transition:opacity .35s;display:flex;align-items:center;justify-content:center;}
+#race-overlay.active{opacity:1;pointer-events:all;}
+#race-modal{width:min(920px,96vw);max-height:95vh;overflow-y:auto;background:var(--surface);border:1px solid rgba(255,215,0,.25);box-shadow:0 0 80px rgba(0,0,0,.9),0 0 40px rgba(255,215,0,.06);animation:popIn .4s cubic-bezier(.23,1,.32,1) both;}
+.race-modal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-bottom:1px solid var(--border);background:rgba(255,215,0,.04);}
+.race-modal-title{font-family:'Orbitron',sans-serif;font-size:1.1rem;font-weight:700;color:var(--gold);letter-spacing:.1em;}
+.race-modal-tag{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;margin-top:3px;}
+
+/* phase visibility */
+.race-phase{display:none;padding:24px;}
+.race-phase.active{display:block;}
+
+/* BET PHASE */
+.racers-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:24px;}
+@media(max-width:600px){.racers-grid{grid-template-columns:repeat(5,1fr);gap:6px;}}
+.racer-card{background:var(--card-bg);border:2px solid var(--border);padding:12px 6px;text-align:center;cursor:pointer;transition:all .22s;position:relative;}
+.racer-card:hover{border-color:var(--accent);background:rgba(0,212,255,.05);}
+.racer-card.selected{border-color:var(--gold);background:rgba(255,215,0,.07);box-shadow:0 0 20px rgba(255,215,0,.2);}
+.lane-num{font-family:'Orbitron',monospace;font-size:16px;font-weight:900;color:var(--muted);margin-bottom:2px;}
+.racer-card.selected .lane-num{color:var(--gold);}
+.r-icon{font-size:30px;margin:4px 0;}
+.r-name{font-size:10px;font-weight:700;color:var(--text);word-break:keep-all;line-height:1.3;min-height:28px;display:flex;align-items:center;justify-content:center;}
+.r-rarity{font-family:'Share Tech Mono',monospace;font-size:7px;letter-spacing:1px;margin-top:4px;opacity:.8;}
+.selected-badge{position:absolute;top:4px;right:4px;background:var(--gold);color:#000;font-family:'Orbitron',monospace;font-size:6px;font-weight:900;padding:2px 4px;letter-spacing:1px;}
+
+.bet-section{background:rgba(0,0,0,.3);border:1px solid var(--border);padding:18px 22px;}
+.bet-label{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;margin-bottom:10px;}
+.bet-amount-display{font-family:'Orbitron',sans-serif;font-size:2rem;font-weight:900;color:var(--gold);text-align:center;margin:10px 0;letter-spacing:.05em;}
+.bet-controls{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-bottom:14px;}
+.bet-ctrl-btn{font-family:'Share Tech Mono',monospace;font-size:10px;padding:6px 12px;background:transparent;border:1px solid var(--border);color:var(--text);cursor:pointer;transition:all .2s;letter-spacing:1px;}
+.bet-ctrl-btn:hover{border-color:var(--gold);color:var(--gold);background:rgba(255,215,0,.06);}
+.bet-ctrl-btn.minus{border-color:rgba(255,51,85,.35);color:var(--red);}
+.bet-ctrl-btn.minus:hover{background:rgba(255,51,85,.08);}
+.bet-ctrl-btn.allin{border-color:rgba(255,215,0,.5);color:var(--gold);}
+.race-start-btn{width:100%;padding:13px;font-family:'Orbitron',sans-serif;font-size:13px;font-weight:700;letter-spacing:.15em;background:linear-gradient(135deg,rgba(255,215,0,.2),rgba(255,215,0,.06));border:1px solid var(--gold);color:var(--gold);cursor:pointer;transition:all .25s;margin-top:14px;clip-path:polygon(12px 0%,100% 0%,calc(100% - 12px) 100%,0% 100%);}
+.race-start-btn:hover:not(:disabled){background:linear-gradient(135deg,rgba(255,215,0,.35),rgba(255,215,0,.15));box-shadow:0 0 30px rgba(255,215,0,.3);}
+.race-start-btn:disabled{opacity:.3;cursor:not-allowed;}
+
+/* RACE TRACK */
+.track-wrapper{margin-bottom:14px;}
+.track-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.track-header-label{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;}
+.rank-live{display:flex;gap:6px;flex-wrap:wrap;}
+.rank-chip{font-family:'Share Tech Mono',monospace;font-size:9px;padding:3px 8px;border:1px solid var(--border);color:var(--muted);letter-spacing:1px;white-space:nowrap;}
+.rank-chip.r1{border-color:var(--gold);color:var(--gold);}
+.rank-chip.r2{border-color:#c0c0c0;color:#c0c0c0;}
+.rank-chip.r3{border-color:#cd7f32;color:#cd7f32;}
+
+.track-container{background:#020810;border:1px solid var(--border);padding:10px 10px 10px 0;position:relative;overflow:hidden;}
+.track-bg-lines{position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent,transparent calc(10% - 1px),rgba(255,255,255,.025) calc(10% - 1px),rgba(255,255,255,.025) 10%);pointer-events:none;}
+.finish-line{position:absolute;top:0;right:0;bottom:0;width:3px;background:repeating-linear-gradient(180deg,#fff 0px,#fff 8px,#111 8px,#111 16px);z-index:5;}
+.finish-label{position:absolute;top:4px;right:6px;font-family:'Share Tech Mono',monospace;font-size:8px;color:rgba(255,255,255,.6);z-index:6;letter-spacing:1px;}
+
+.lane{display:flex;align-items:center;padding:2px 0;border-bottom:1px solid rgba(255,255,255,.04);position:relative;height:64px;}
+.lane:last-child{border-bottom:none;}
+.lane-label{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:var(--muted);width:28px;flex-shrink:0;text-align:center;z-index:2;}
+.lane-track{flex:1;position:relative;height:52px;overflow:visible;}
+.racer-sprite{position:absolute;top:50%;transform:translateY(-50%);font-size:28px;left:0%;z-index:3;user-select:none;will-change:left;line-height:1;}
+.racer-sprite.event-boost{animation:boostFlash .35s ease-out;}
+.racer-sprite.event-fall{animation:fallShake .55s ease-out;}
+@keyframes boostFlash{0%{filter:drop-shadow(0 0 14px #ffff00) brightness(2.2);}100%{filter:none;}}
+@keyframes fallShake{0%,100%{transform:translateY(-50%) rotate(0deg);}20%{transform:translateY(-50%) rotate(-18deg);}60%{transform:translateY(-50%) rotate(14deg);}80%{transform:translateY(-50%) rotate(-8deg);}}
+
+.event-badge{position:absolute;top:-20px;left:0;font-size:10px;font-family:'Share Tech Mono',monospace;white-space:nowrap;opacity:0;pointer-events:none;z-index:10;background:rgba(0,0,0,.7);padding:1px 5px;border-radius:2px;}
+.event-badge.show{opacity:1;animation:badgePop .3s ease-out;}
+@keyframes badgePop{from{transform:translateY(4px);}to{transform:translateY(0);}}
+
+/* MY PICK indicator */
+.my-pick-bar{position:absolute;left:0;right:0;top:0;bottom:0;background:rgba(255,215,0,.04);border-left:2px solid rgba(255,215,0,.4);pointer-events:none;z-index:1;}
+
+/* EVENT LOG */
+.event-log{height:72px;overflow-y:auto;background:#020810;border:1px solid var(--border);padding:6px 12px;margin-bottom:4px;}
+.log-line{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:1px;line-height:1.9;}
+.log-line.boost{color:#ffee00;} .log-line.fall{color:var(--red);} .log-line.finish{color:var(--green);font-size:10px;}
+
+/* RESULT PHASE */
+.result-banner{text-align:center;padding:28px 20px 16px;}
+.result-title{font-family:'Orbitron',sans-serif;font-size:clamp(1.5rem,4vw,2.2rem);font-weight:900;margin-bottom:8px;letter-spacing:.1em;}
+.result-title.win{color:var(--gold);text-shadow:0 0 40px rgba(255,215,0,.5);}
+.result-title.even{color:var(--accent);}
+.result-title.half{color:#ff8800;}
+.result-title.lose{color:var(--red);}
+.result-subtitle{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:2px;margin-bottom:20px;}
+.result-podium{display:flex;justify-content:center;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+.podium-item{text-align:center;background:var(--card-bg);border:1px solid var(--border);padding:12px 16px;min-width:100px;}
+.podium-item.my-pick{border-color:var(--gold);}
+.podium-rank{font-family:'Orbitron',monospace;font-size:20px;font-weight:900;margin-bottom:4px;}
+.podium-rank.rk1{color:var(--gold);} .podium-rank.rk2{color:#c0c0c0;} .podium-rank.rk3{color:#cd7f32;} .podium-rank.rk4,.podium-rank.rk5{color:var(--muted);}
+.podium-icon{font-size:28px;margin-bottom:4px;}
+.podium-name{font-size:10px;font-weight:700;color:var(--text);}
+.podium-pick-label{font-family:'Share Tech Mono',monospace;font-size:8px;color:var(--gold);letter-spacing:1px;margin-top:3px;}
+.result-funds-change{font-family:'Orbitron',sans-serif;font-size:1.3rem;font-weight:900;text-align:center;margin-bottom:24px;letter-spacing:.04em;}
+.funds-plus{color:var(--green);} .funds-zero{color:var(--accent);} .funds-minus{color:var(--red);}
+.result-actions{display:flex;gap:12px;justify-content:center;}
+.result-btn{font-family:'Orbitron',sans-serif;font-size:11px;font-weight:700;letter-spacing:.1em;padding:11px 24px;cursor:pointer;transition:all .2s;border:1px solid;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);}
+.result-btn.primary{background:linear-gradient(135deg,rgba(255,215,0,.18),rgba(255,215,0,.05));border-color:var(--gold);color:var(--gold);}
+.result-btn.primary:hover{background:linear-gradient(135deg,rgba(255,215,0,.3),rgba(255,215,0,.12));box-shadow:0 0 20px rgba(255,215,0,.3);}
+.result-btn.secondary{background:transparent;border-color:var(--border);color:var(--muted);}
+.result-btn.secondary:hover{border-color:var(--accent);color:var(--accent);}
+
+/* BANKRUPT */
+.bankrupt-notice{text-align:center;padding:48px 20px;}
+.bankrupt-notice p{font-family:'Orbitron',monospace;font-size:1.1rem;color:var(--red);margin-bottom:8px;letter-spacing:.05em;}
+.bankrupt-notice small{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);display:block;margin-bottom:24px;letter-spacing:2px;}
+</style>
+</head>
+<body>
+
+<!-- 경마 HUD 고정 -->
+<div class="race-hud">
+  <div class="funds-display">💰 <span id="funds-val">--</span></div>
+  <button class="race-btn" onclick="openRace()">🏁 경마하기</button>
+</div>
+
+<!-- 헤더 -->
+<header>
+  <div class="header-tag">// SYSTEM INITIALIZED · REGISTRY v3.1.4</div>
+  <h1>CODEX</h1>
+  <div class="header-sub">[ 데이터 도감 · ENTITY DATABASE · 분류 총람 ]</div>
+  <div class="header-line"></div>
+</header>
+
+<!-- 필터 바 -->
+<div class="filter-bar">
+  <button class="filter-btn active" data-filter="all">ALL</button>
+  <button class="filter-btn" data-filter="creature">CREATURE</button>
+  <button class="filter-btn" data-filter="artifact">ARTIFACT</button>
+  <button class="filter-btn" data-filter="entity">ENTITY</button>
+  <button class="filter-btn" data-filter="anomaly">ANOMALY</button>
+</div>
+
+<!-- 그리드 -->
+<section class="grid-section">
+  <div class="grid-count" id="grid-count"></div>
+  <div class="grid" id="grid"></div>
+</section>
+
+<!-- 도감 1차 팝업 -->
+<div class="overlay" id="overlay1">
+  <div class="popup1" id="popup1" onclick="event.stopPropagation()">
+    <div class="popup1-header">
+      <span class="popup1-tag" id="p1-tag">// ENTITY RECORD</span>
+      <button class="btn-close" id="close1">✕</button>
+    </div>
+    <div class="popup1-body">
+      <div class="popup1-img-wrap" id="p1-img"></div>
+      <div class="popup1-content">
+        <div class="popup1-rarity-badge" id="p1-rarity-badge"></div>
+        <div class="popup1-name" id="p1-name"></div>
+        <div class="popup1-type" id="p1-type"></div>
+        <div class="popup1-desc" id="p1-desc"></div>
+        <div class="popup1-stats" id="p1-stats"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 도감 2차 팝업 -->
+<div class="overlay2" id="overlay2">
+  <button class="popup2-close" id="close2">✕</button>
+  <div class="popup2-img" id="p2-img"></div>
+  <div class="esc-hint">[ ESC ] 닫기</div>
+</div>
+
+<!-- 경마 모달 -->
+<div id="race-overlay">
+  <div id="race-modal">
+    <div class="race-modal-header">
+      <div>
+        <div class="race-modal-title">🏁 ENTITY GRAND PRIX</div>
+        <div class="race-modal-tag" id="race-modal-tag">// 출전 개체 선택 &amp; 베팅</div>
+      </div>
+      <button class="btn-close" id="race-close-btn">✕</button>
+    </div>
+
+    <!-- Phase: 베팅 -->
+    <div class="race-phase active" id="phase-bet">
+      <p style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:2px;margin-bottom:16px;">// 1등 예상 개체 선택 후 베팅 금액을 설정하세요</p>
+      <div class="racers-grid" id="racers-grid"></div>
+      <div class="bet-section">
+        <div class="bet-label">// 베팅 금액 (10만 원 단위 조절)</div>
+        <div class="bet-amount-display" id="bet-display">100,000원</div>
+        <div class="bet-controls">
+          <button class="bet-ctrl-btn minus" onclick="adjustBet(-5)">－500만</button>
+          <button class="bet-ctrl-btn minus" onclick="adjustBet(-1)">－100만</button>
+          <button class="bet-ctrl-btn minus" onclick="adjustBet(-0.1)">－10만</button>
+          <button class="bet-ctrl-btn" onclick="adjustBet(0.1)">＋10만</button>
+          <button class="bet-ctrl-btn" onclick="adjustBet(1)">＋100만</button>
+          <button class="bet-ctrl-btn" onclick="adjustBet(5)">＋500만</button>
+          <button class="bet-ctrl-btn allin" onclick="betAllIn()">ALL IN</button>
+        </div>
+        <button class="race-start-btn" id="race-start-btn" onclick="startRace()" disabled>
+          ▶ 경주 시작
+        </button>
+      </div>
+    </div>
+
+    <!-- Phase: 경주 -->
+    <div class="race-phase" id="phase-race">
+      <div class="track-wrapper">
+        <div class="track-header">
+          <div class="track-header-label" id="race-status-label">// 경주 진행 중...</div>
+          <div class="rank-live" id="rank-live"></div>
+        </div>
+        <div class="track-container" id="track-container">
+          <div class="track-bg-lines"></div>
+          <div class="finish-line"></div>
+          <div class="finish-label">FINISH</div>
+          <div id="lanes"></div>
+        </div>
+      </div>
+      <div class="event-log" id="event-log"></div>
+    </div>
+
+    <!-- Phase: 결과 -->
+    <div class="race-phase" id="phase-result">
+      <div class="result-banner">
+        <div class="result-title" id="result-title"></div>
+        <div class="result-subtitle" id="result-subtitle"></div>
+      </div>
+      <div class="result-podium" id="result-podium"></div>
+      <div class="result-funds-change" id="result-funds-change"></div>
+      <div class="result-actions">
+        <button class="result-btn primary" onclick="resetRace()">🔄 다시 경마</button>
+        <button class="result-btn secondary" onclick="closeRace()">← 도감으로</button>
+      </div>
+    </div>
+
+    <!-- Phase: 파산 -->
+    <div class="race-phase" id="phase-bankrupt">
+      <div class="bankrupt-notice">
+        <p>⚠ 보유 자금 소진</p>
+        <small>// INSUFFICIENT FUNDS · EMERGENCY RELOAD REQUIRED</small>
+        <button class="race-start-btn" onclick="reloadFunds()" style="margin:0 auto;display:block;max-width:300px;">
+          긴급 자금 충전 · +1,000,000원
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════
+   DATA
+════════════════════════════ */
+const DATA = [
+  { id:'001', name:'볼텍스 드레이크', type:'CREATURE', rarity:'legend', icon:'🐉',
+    desc:'심연의 소용돌이 속에서 탄생한 고대 존재. 그 날개짓 하나로 대기 흐름을 역전시키며, 전설 속에서만 기록되어 오던 최상위 포식자.',
+    stats:{'위협도':'S+','관측수':'3회','분류':'드래곤류','크기':'120m급'}},
+  { id:'002', name:'나노 스피릿', type:'ENTITY', rarity:'rare', icon:'🔮',
+    desc:'양자 회로망에서 자연 발생한 에너지 집합체. 육안으로는 관측 불가하며 특수 스캐너에만 포착된다.',
+    stats:{'위협도':'C','관측수':'812회','분류':'에너지체','크기':'0.3nm'}},
+  { id:'003', name:'아이언 골렘 Mk.Ⅶ', type:'ARTIFACT', rarity:'epic', icon:'🤖',
+    desc:'잃어버린 고대 문명의 자동 방어 구조체. 원형 소재는 미지의 합금으로 현대 기술로도 성분 분석에 실패했다.',
+    stats:{'위협도':'A','관측수':'27회','분류':'구조체','크기':'4.2m'}},
+  { id:'004', name:'심해 리바이어던', type:'CREATURE', rarity:'legend', icon:'🦑',
+    desc:'수심 11,000m 이하의 초심해대에 서식하는 거대 연체류. 해저 케이블 단절 사고의 주요 원인으로 지목된다.',
+    stats:{'위협도':'S','관측수':'9회','분류':'두족류','크기':'800m급'}},
+  { id:'005', name:'크리스탈 고스트', type:'ANOMALY', rarity:'epic', icon:'👻',
+    desc:'광물 결정 내부에 봉인된 의식 잔류체. 빛의 굴절각이 변화할 때 외부 세계로 일시적 투영이 관측된다.',
+    stats:{'위협도':'B','관측수':'55회','분류':'잔류의식','크기':'불명'}},
+  { id:'006', name:'플라즈마 피닉스', type:'CREATURE', rarity:'legend', icon:'🔥',
+    desc:'항성 코로나에서 발화하는 초고온 생명체. 소멸 시 방출되는 에너지로 주변 행성계를 재구성한다.',
+    stats:{'위협도':'S+','관측수':'1회','분류':'고에너지체','크기':'행성급'}},
+  { id:'007', name:'섀도우 픽시', type:'ENTITY', rarity:'common', icon:'🧚',
+    desc:'그림자 층위를 이동 매개로 삼는 소형 요정류. 거울의 반사면을 통로로 활용하며 소음에 민감하게 반응한다.',
+    stats:{'위협도':'E','관측수':'4,210회','분류':'요정류','크기':'8cm'}},
+  { id:'008', name:'오메가 큐브', type:'ARTIFACT', rarity:'legend', icon:'🧊',
+    desc:'미지의 차원에서 유입된 완전 대칭 구조물. 직접 접촉 시 접촉자의 시간 인지가 교란된다.',
+    stats:{'위협도':'X','관측수':'1회','분류':'차원 유물','크기':'측정불가'}},
+  { id:'009', name:'뇌전 켄타우로스', type:'CREATURE', rarity:'rare', icon:'⚡',
+    desc:'번개 폭풍 속에서 자연 발생하는 반인반수 형태의 전자기 생명체. 뇌운을 다리 삼아 대륙을 이동한다.',
+    stats:{'위협도':'A','관측수':'142회','분류':'복합형','크기':'7m급'}},
+  { id:'010', name:'심연의 눈', type:'ANOMALY', rarity:'epic', icon:'👁️',
+    desc:'공중에 부유하는 자율 관측 이상체. 특정 개인을 수개월에 걸쳐 추적하는 행동 양식이 관측된다.',
+    stats:{'위협도':'B','관측수':'371회','분류':'관측체','크기':'2~12m'}},
+  { id:'011', name:'루나 슬라임', type:'CREATURE', rarity:'common', icon:'🌙',
+    desc:'달빛 조사 시에만 물질화하는 반투명 연체 생명체. 낮 동안에는 완전히 비가시 상태를 유지한다.',
+    stats:{'위협도':'F','관측수':'99,000+','분류':'연체류','크기':'30cm~2m'}},
+  { id:'012', name:'보이드 스피어', type:'ARTIFACT', rarity:'rare', icon:'🌑',
+    desc:'완전한 무반사 표면을 지닌 구형 유물. 내부에서 방출되는 중력파가 주변 공간을 미세하게 왜곡한다.',
+    stats:{'위협도':'A','관측수':'1회','분류':'중력체','크기':'직경 0.4m'}},
+];
+
+const rarityLabel = {common:'COMMON',rare:'RARE',epic:'EPIC',legend:'LEGEND'};
+const rarityBadgeClass = {common:'badge-common',rare:'badge-rare',epic:'badge-epic',legend:'badge-legend'};
+
+/* ════════════════════════════
+   FUNDS (sessionStorage)
+════════════════════════════ */
+const INIT_FUNDS = 1_000_000;
+function getFunds(){ const v=sessionStorage.getItem('codex_funds'); return v===null?null:parseInt(v); }
+function setFunds(n){ sessionStorage.setItem('codex_funds',String(Math.max(0,n))); updateFundsHUD(); }
+function updateFundsHUD(){
+  const f=getFunds();
+  document.getElementById('funds-val').textContent = f===null?'--':f.toLocaleString()+'원';
+}
+
+/* ════════════════════════════
+   DOGAM GRID
+════════════════════════════ */
+function renderGrid(filter='all'){
+  const grid=document.getElementById('grid');
+  const countEl=document.getElementById('grid-count');
+  grid.innerHTML='';
+  const filtered=filter==='all'?DATA:DATA.filter(d=>d.type.toLowerCase()===filter);
+  countEl.textContent=`// TOTAL ${filtered.length} ENTITIES REGISTERED`;
+  filtered.forEach((d,i)=>{
+    const card=document.createElement('div');
+    card.className='card'; card.style.animationDelay=`${i*.05}s`;
+    card.innerHTML=`<span class="card-num">#${d.id}</span><span class="card-rarity rarity-${d.rarity}"></span>
+      <div class="card-img-wrap">${d.icon}</div>
+      <div class="card-info"><div class="card-type">${d.type}</div><div class="card-name">${d.name}</div></div>`;
+    card.addEventListener('click',()=>openPopup1(d));
+    grid.appendChild(card);
+  });
+}
+document.querySelectorAll('.filter-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active'); renderGrid(btn.dataset.filter);
+  });
+});
+
+/* ════════════════════════════
+   DOGAM POPUPS
+════════════════════════════ */
+function openPopup1(d){
+  document.getElementById('p1-tag').textContent=`// ENTITY #${d.id} · ${d.type}`;
+  document.getElementById('p1-img').innerHTML=d.icon;
+  document.getElementById('p1-name').textContent=d.name;
+  document.getElementById('p1-type').textContent=`[ ${d.type} ]`;
+  document.getElementById('p1-desc').textContent=d.desc;
+  const badge=document.getElementById('p1-rarity-badge');
+  badge.textContent=rarityLabel[d.rarity]; badge.className=`popup1-rarity-badge ${rarityBadgeClass[d.rarity]}`;
+  document.getElementById('p1-stats').innerHTML=Object.entries(d.stats).map(([k,v])=>
+    `<div class="stat-item"><div class="stat-label">${k}</div><div class="stat-val">${v}</div></div>`).join('');
+  document.getElementById('p1-img').onclick=(e)=>{e.stopPropagation();openPopup2(d.icon);};
+  document.getElementById('overlay1').classList.add('active');
+}
+function closePopup1(){document.getElementById('overlay1').classList.remove('active');}
+function openPopup2(icon){document.getElementById('p2-img').textContent=icon;document.getElementById('overlay2').classList.add('active');}
+function closePopup2(){document.getElementById('overlay2').classList.remove('active');}
+
+document.getElementById('overlay1').addEventListener('click',closePopup1);
+document.getElementById('close1').addEventListener('click',(e)=>{e.stopPropagation();closePopup1();});
+document.getElementById('overlay2').addEventListener('click',closePopup2);
+document.getElementById('close2').addEventListener('click',(e)=>{e.stopPropagation();closePopup2();});
+
+document.addEventListener('keydown',(e)=>{
+  if(e.key!=='Escape') return;
+  if(document.getElementById('overlay2').classList.contains('active')) closePopup2();
+  else if(document.getElementById('overlay1').classList.contains('active')) closePopup1();
+  else if(document.getElementById('race-overlay').classList.contains('active') && racePhase==='bet') closeRace();
+});
+
+/* ════════════════════════════
+   RACE STATE
+════════════════════════════ */
+let racePhase='bet';
+let racers=[];        // [{data, pos, finished, rank, fallTimer, boostTimer}]
+let selectedLane=-1;
+let betAmount=100_000;
+let raceRafId=null;
+let finishOrder=[];
+
+/* ════════════════════════════
+   OPEN / CLOSE
+════════════════════════════ */
+function openRace(){
+  if(getFunds()===null) setFunds(INIT_FUNDS);
+  document.getElementById('race-overlay').classList.add('active');
+  initBetPhase();
+}
+function closeRace(){
+  document.getElementById('race-overlay').classList.remove('active');
+  if(raceRafId){cancelAnimationFrame(raceRafId);raceRafId=null;}
+}
+document.getElementById('race-close-btn').addEventListener('click',()=>{
+  if(racePhase==='race') return;
+  closeRace();
+});
+
+function showPhase(name){
+  racePhase=name;
+  document.querySelectorAll('.race-phase').forEach(p=>p.classList.remove('active'));
+  document.getElementById(`phase-${name}`).classList.add('active');
+  const tags={bet:'// 출전 개체 선택 & 베팅',race:'// 경주 진행 중...',result:'// 경기 결과',bankrupt:'// 자금 소진'};
+  document.getElementById('race-modal-tag').textContent=tags[name]||'';
+}
+
+/* ════════════════════════════
+   BET PHASE
+════════════════════════════ */
+// 희귀도별 기본 속도 (per-ms 전진량, % 단위)
+const RARITY_SPEED = {legend:[0.009,0.013], epic:[0.008,0.012], rare:[0.007,0.011], common:[0.006,0.010]};
+
+function initBetPhase(){
+  const funds=getFunds();
+  if(funds!==null && funds<=0){showPhase('bankrupt');return;}
+  // 5개 랜덤 추출
+  const pool=[...DATA].sort(()=>Math.random()-.5).slice(0,5);
+  racers=pool.map(d=>({data:d, pos:0, finished:false, rank:0, fallTimer:0, boostTimer:0}));
+  selectedLane=-1;
+  betAmount=Math.min(100_000, getFunds()||100_000);
+  renderRacerCards();
+  updateBetDisplay();
+  document.getElementById('race-start-btn').disabled=true;
+  showPhase('bet');
+}
+
+function rarityColor(r){return {legend:'#ffd700',epic:'#aa44ff',rare:'#4488ff',common:'#888'}[r];}
+
+function renderRacerCards(){
+  const g=document.getElementById('racers-grid');
+  g.innerHTML='';
+  racers.forEach((r,i)=>{
+    const el=document.createElement('div');
+    el.className='racer-card'; el.id=`rc-${i}`;
+    el.innerHTML=`<div class="lane-num">${i+1}</div>
+      <div class="r-icon">${r.data.icon}</div>
+      <div class="r-name">${r.data.name}</div>
+      <div class="r-rarity" style="color:${rarityColor(r.data.rarity)}">${rarityLabel[r.data.rarity]}</div>`;
+    el.addEventListener('click',()=>selectLane(i));
+    g.appendChild(el);
+  });
+}
+
+function selectLane(i){
+  selectedLane=i;
+  document.querySelectorAll('.racer-card').forEach((c,idx)=>{
+    c.classList.toggle('selected',idx===i);
+    const b=c.querySelector('.selected-badge'); if(b)b.remove();
+    if(idx===i){const b=document.createElement('div');b.className='selected-badge';b.textContent='PICK';c.appendChild(b);}
+  });
+  document.getElementById('race-start-btn').disabled=false;
+}
+
+function adjustBet(units){
+  const f=getFunds()||0;
+  betAmount=Math.round(betAmount+units*100_000);
+  betAmount=Math.max(100_000,Math.min(f,betAmount));
+  updateBetDisplay();
+}
+function betAllIn(){betAmount=getFunds()||100_000;updateBetDisplay();}
+function updateBetDisplay(){document.getElementById('bet-display').textContent=betAmount.toLocaleString()+'원';}
+function reloadFunds(){setFunds(INIT_FUNDS);initBetPhase();}
+
+/* ════════════════════════════
+   RACE PHASE
+════════════════════════════ */
+const FINISH_POS=88; // % 위치에서 완주
+
+function startRace(){
+  setFunds(getFunds()-betAmount); // 베팅 차감
+  finishOrder=[];
+  showPhase('race');
+  buildTrack();
+  // 약간의 딜레이 후 출발
+  setTimeout(()=>{
+    let lastTs=null;
+    function tick(ts){
+      if(!lastTs)lastTs=ts;
+      const dt=Math.min(ts-lastTs,50);
+      lastTs=ts;
+      stepRace(dt);
+      const allDone=racers.every(r=>r.finished);
+      if(!allDone){raceRafId=requestAnimationFrame(tick);}
+      else{setTimeout(showResult,700);}
+    }
+    raceRafId=requestAnimationFrame(tick);
+  },500);
+}
+
+function buildTrack(){
+  const lanesEl=document.getElementById('lanes');
+  lanesEl.innerHTML='';
+  racers.forEach((r,i)=>{
+    const lane=document.createElement('div');
+    lane.className='lane';
+    if(i===selectedLane) lane.innerHTML+='<div class="my-pick-bar"></div>';
+    lane.innerHTML+=`<div class="lane-label">${i+1}</div>
+      <div class="lane-track" id="lt-${i}">
+        <div class="racer-sprite" id="rs-${i}" style="left:0%">${r.data.icon}
+          <div class="event-badge" id="eb-${i}"></div>
+        </div>
+      </div>`;
+    lanesEl.appendChild(lane);
+  });
+  document.getElementById('event-log').innerHTML='';
+  document.getElementById('rank-live').innerHTML='';
+  racers.forEach(r=>{r.pos=0;r.finished=false;r.rank=0;r.fallTimer=0;r.boostTimer=0;});
+}
+
+function addLog(msg,cls=''){
+  const log=document.getElementById('event-log');
+  const line=document.createElement('div');
+  line.className='log-line '+(cls||''); line.textContent=msg;
+  log.appendChild(line); log.scrollTop=log.scrollHeight;
+}
+
+function stepRace(dt){
+  racers.forEach((r,i)=>{
+    if(r.finished)return;
+    const [lo,hi]=RARITY_SPEED[r.data.rarity];
+
+    if(r.fallTimer>0){
+      r.fallTimer-=dt;
+      r.pos+=lo*0.25*dt; // 넘어진 동안 매우 느리게
+    } else if(r.boostTimer>0){
+      r.boostTimer-=dt;
+      r.pos+=(hi+0.006)*dt; // 가속 중
+    } else {
+      // 랜덤 이벤트 확률 (dt 보정)
+      const evChance=dt*0.0008;
+      const roll=Math.random();
+      if(roll<evChance*0.4){         // 넘어짐
+        r.fallTimer=700+Math.random()*800;
+        showEvent(i,'❌ 넘어짐!','fall');
+        addLog(`[${i+1}번] ${r.data.name} — 넘어짐! ❌`,'fall');
+      } else if(roll<evChance){       // 돌발 가속
+        r.boostTimer=350+Math.random()*350;
+        showEvent(i,'🚀 돌진!','boost');
+        addLog(`[${i+1}번] ${r.data.name} — 돌발 가속! 🚀`,'boost');
+      } else {
+        r.pos+=(lo+(hi-lo)*Math.random())*dt;
+      }
+    }
+
+    if(r.pos>=FINISH_POS){
+      r.pos=FINISH_POS; r.finished=true;
+      r.rank=finishOrder.length+1;
+      finishOrder.push(i);
+      addLog(`[${r.rank}위] ${r.data.name} 결승선 통과!`,'finish');
+    }
+
+    const sprite=document.getElementById(`rs-${i}`);
+    if(sprite) sprite.style.left=r.pos.toFixed(2)+'%';
+  });
+
+  updateRankLive();
+}
+
+function showEvent(laneIdx,text,type){
+  const eb=document.getElementById(`eb-${laneIdx}`);
+  const rs=document.getElementById(`rs-${laneIdx}`);
+  if(!eb||!rs)return;
+  eb.textContent=text; eb.classList.add('show');
+  rs.classList.remove('event-boost','event-fall');
+  void rs.offsetWidth;
+  rs.classList.add(type==='boost'?'event-boost':'event-fall');
+  setTimeout(()=>eb.classList.remove('show'),1400);
+}
+
+function updateRankLive(){
+  const sorted=[...racers].map((r,i)=>({r,i})).sort((a,b)=>b.r.pos-a.r.pos);
+  const liveEl=document.getElementById('rank-live');
+  liveEl.innerHTML=sorted.map(({r,i},rank)=>{
+    const cls=rank===0?'r1':rank===1?'r2':rank===2?'r3':'';
+    const medal=['🥇','🥈','🥉','4️⃣','5️⃣'][rank]||'';
+    return `<div class="rank-chip ${cls}">${medal}${i+1}번</div>`;
+  }).join('');
+}
+
+/* ════════════════════════════
+   RESULT
+════════════════════════════ */
+function showResult(){
+  const myRacer=racers[selectedLane];
+  const myRank=myRacer.rank;
+  const currentFunds=getFunds(); // 이미 차감된 상태
+
+  // 환급금 계산
+  const refund = myRank===1 ? betAmount*2 : myRank===2 ? betAmount : myRank===3 ? betAmount*0.5 : 0;
+  const net=refund-betAmount;
+  const newFunds=currentFunds+refund;
+  setFunds(newFunds);
+
+  // 제목 및 클래스
+  const configs={
+    1:{text:'🏆 우승!',cls:'win',sub:'베팅 금액의 2배 수령'},
+    2:{text:'🥈 2등 — 본전',cls:'even',sub:'베팅 금액 전액 반환'},
+    3:{text:'🥉 3등 — 절반 손실',cls:'half',sub:'베팅 금액의 50% 반환'},
+    4:{text:'💀 4등 — 전액 소멸',cls:'lose',sub:'베팅 금액 전액 소멸'},
+    5:{text:'💀 5등 — 전액 소멸',cls:'lose',sub:'베팅 금액 전액 소멸'},
+  };
+  const cfg=configs[myRank]||configs[5];
+  document.getElementById('result-title').textContent=cfg.text;
+  document.getElementById('result-title').className='result-title '+cfg.cls;
+  document.getElementById('result-subtitle').textContent=cfg.sub;
+
+  // 전체 순위 podium
+  document.getElementById('result-podium').innerHTML=finishOrder.map((ri,rank)=>{
+    const r=racers[ri];
+    const medals=['🥇','🥈','🥉','4위','5위'];
+    const isPick=ri===selectedLane;
+    return `<div class="podium-item${isPick?' my-pick':''}">
+      <div class="podium-rank rk${rank+1}">${medals[rank]}</div>
+      <div class="podium-icon">${r.data.icon}</div>
+      <div class="podium-name">${ri+1}번<br>${r.data.name}</div>
+      ${isPick?'<div class="podium-pick-label">▲ MY PICK</div>':''}
+    </div>`;
+  }).join('');
+
+  // 자금 변동
+  const netStr=(net>=0?'+':'')+net.toLocaleString()+'원';
+  const netCls=net>0?'funds-plus':net===0?'funds-zero':'funds-minus';
+  document.getElementById('result-funds-change').innerHTML=
+    `잔여: <span style="color:var(--gold)">${newFunds.toLocaleString()}원</span>&nbsp;
+    <span class="${netCls}" style="font-size:.85rem">(${netStr})</span>`;
+
+  showPhase('result');
+  if(newFunds<=0) setTimeout(()=>showPhase('bankrupt'),1800);
+}
+
+function resetRace(){initBetPhase();}
+
+/* ════════════════════════════
+   INIT
+════════════════════════════ */
+updateFundsHUD();
+renderGrid();
+</script>
+</body>
+</html>
